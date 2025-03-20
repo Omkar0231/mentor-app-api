@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
+    'knox',
 ]
 
 # Custom User Model
@@ -125,3 +126,29 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'knox.auth.TokenAuthentication',
+    ],
+}
+
+CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "https://yourdomain.com"]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'studynotion1089@gmail.com'  # Replace with your Gmail
+EMAIL_HOST_PASSWORD = 'nuyk zdeh wral kbuc'  # Use an App Password, not your Gmail password
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default
+]
+
+
+# SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"  # Or "db" if needed
+# SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access to session cookies
+# SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
+# SESSION_SAVE_EVERY_REQUEST = False  # Prevents session from being saved on every request
+# SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expires session when browser closes
