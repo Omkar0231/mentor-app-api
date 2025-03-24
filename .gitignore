@@ -4,3 +4,8 @@
 *.pyc
 
 db.sqlite3
+
+requirements.txt
+
+/.ebextensions
+/.elasticbeanstalk

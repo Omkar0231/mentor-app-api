@@ -10,6 +10,8 @@ from django.core.mail import send_mail
 import random
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated
+
 
 
 class RegisterView(APIView):
@@ -172,4 +174,26 @@ class ResetPasswordView(APIView):
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class UpdatePasswordView(APIView):
+    permission_classes = [IsAuthenticated]  # ✅ User must be logged in
+
+    def post(self, request):
+        user = request.user  # ✅ Get the logged-in user
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+
+        # ✅ Check if both fields are provided
+        if not current_password or not new_password:
+            return Response({"error": "Current password and new password are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Check if current password is correct
+        if not check_password(current_password, user.password):
+            return Response({"error": "Incorrect current password"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Hash and update new password securely
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
 
