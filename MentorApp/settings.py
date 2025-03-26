@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'knox',
+    'rest_framework',
+    'hackathons',
 ]
 
 # Custom User Model
