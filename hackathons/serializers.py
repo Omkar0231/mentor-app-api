@@ -8,6 +8,8 @@ class HackathonSerializer(serializers.ModelSerializer):
 
 class HackathonApplicationSerializer(serializers.ModelSerializer):
     hackathon_title = serializers.CharField(source="hackathon.title", read_only=True)  #  Include Hackathon Title
+    user_email = serializers.EmailField(source='user.email', read_only=True) # Auto fetch user email
+    
     class Meta:
         model = HackathonApplication
         fields = ['id', 'hackathon', 'hackathon_title', 'user_email', 'applied_at']  #  Include all required fields

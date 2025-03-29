@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 # Create your models here.
 from django.db import models
@@ -30,7 +31,7 @@ class HackathonsList(models.Model):
 
 class HackathonApplication(models.Model):
     hackathon = models.ForeignKey(HackathonsList, on_delete=models.CASCADE)
-    user_email = models.EmailField()  # User applying for the hackathon
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)  # ✅ Store user reference
     applied_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

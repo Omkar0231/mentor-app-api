@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from .serializers import HackathonSerializer, HackathonApplicationSerializer
 from rest_framework.response import Response
 from rest_framework import status, generics
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 from .models import HackathonsList, HackathonApplication
 
 # Create your views here.
@@ -54,6 +56,9 @@ class HackathonView(APIView):
 
 
 class ApplyHackathonView(APIView):
+    authentication_classes = [TokenAuthentication]  # ✅ Require token authentication
+    permission_classes = [IsAuthenticated]  # ✅ Only authenticated users can apply
+
     def post(self, request, pk, *args, **kwargs):
         # self.request.user
         hackathon = get_object_or_404(HackathonsList, id=pk)
@@ -61,6 +66,17 @@ class ApplyHackathonView(APIView):
         # Check if Hackathon is inactive
         if not hackathon.status:
             return Response({'error': 'This hackathon is not active.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user  # ✅ Get user from token
+
+        # Check if the user has already applied
+        if HackathonApplication.objects.filter(hackathon=hackathon, user=user).exists():
+            return Response({'error': 'You have already applied to this hackathon!'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Create application with user automatically
+        HackathonApplication.objects.create(hackathon=hackathon, user=user)
+
+        return Response({'message': 'Successfully applied!'}, status=status.HTTP_201_CREATED)
 
         # Pass hackathon in serializer context
         serializer = HackathonApplicationSerializer(data=request.data, context={'hackathon': hackathon})
