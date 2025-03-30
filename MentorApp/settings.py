@@ -46,7 +46,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'knox',
+    'rest_framework',
+    'hackathons',
+    'rest_framework.authtoken',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # ✅ Enable Token Authentication
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # ✅ Require authentication by default
+    ]
+}
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'
