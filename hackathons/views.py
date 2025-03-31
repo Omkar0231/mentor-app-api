@@ -1,22 +1,33 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from .models import HackathonsList
 from rest_framework.views import APIView
 from .serializers import HackathonSerializer, HackathonApplicationSerializer
 from rest_framework.response import Response
 from rest_framework import status, generics
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from .models import HackathonsList, HackathonApplication
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from knox.auth import TokenAuthentication
+from accounts.models import CustomUser  # Import your user model
+
 
 # Create your views here.
 
 class HackathonsListView(APIView):
+    authentication_classes = [TokenAuthentication]  # ✅ Use Knox Authentication
+    permission_classes = [AllowAny]  # ✅ Ensure user is logged in
+    
     def post(self, request, *args, **kwargs):
-        print(request.data)
+        self.permission_classes = [IsAuthenticated]  # ✅ Require authentication for POST
+        self.authentication_classes = [TokenAuthentication]  # ✅ Knox authentication
+        self.check_permissions(request)
+
+        user = request.user  # ✅ Get the logged-in user from Knox token
         serializer = HackathonSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(created_by=user)  # ✅ Automatically set 'created_by'
             return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
+
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
@@ -32,13 +43,24 @@ class HackathonsListView(APIView):
     
 # ✅ Retrieve, Update, and Delete Hackathon by ID
 class HackathonView(APIView):
+    authentication_classes = [TokenAuthentication]  # ✅ Use Knox Authentication
+    permission_classes = [AllowAny]  # ✅ Ensure user is logged in
+
     def get(self, request, pk, *args, **kwargs):
         hackathon = get_object_or_404(HackathonsList, id=pk)
         serializer = HackathonSerializer(hackathon)
         return Response({'data': serializer.data})
 
     def put(self, request, pk, *args, **kwargs):
+        self.permission_classes = [IsAuthenticated]  # ✅ Require authentication for PUT
+        self.check_permissions(request)
+
         hackathon = get_object_or_404(HackathonsList, id=pk)
+
+        # ✅ Ensure only the creator can update the hackathon
+        if hackathon.created_by != request.user:
+            return Response({'error': 'You do not have permission to update this hackathon'}, status=status.HTTP_403_FORBIDDEN)
+        
         serializer = HackathonSerializer(hackathon, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -46,45 +68,37 @@ class HackathonView(APIView):
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk, *args, **kwargs):
+        self.permission_classes = [IsAuthenticated]  # ✅ Require authentication for DELETE
+        self.check_permissions(request)
+
         hackathon = get_object_or_404(HackathonsList, id=pk)
+
+        if hackathon.created_by != request.user:
+            return Response({'error': 'You do not have permission to delete this hackathon'}, status=status.HTTP_403_FORBIDDEN)
+        
         hackathon.delete()
         return Response({'message': 'The Object has been deleted!'}, status=status.HTTP_204_NO_CONTENT)
 
-# class ActiveHackathonsListView(generics.ListAPIView):
-#     queryset = HackathonsList.objects.filter(status=True)
-#     serializer_class = HackathonSerializer
-
 
 class ApplyHackathonView(APIView):
-    authentication_classes = [TokenAuthentication]  # ✅ Require token authentication
-    permission_classes = [IsAuthenticated]  # ✅ Only authenticated users can apply
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, pk, *args, **kwargs):
-        # self.request.user
+        print("Authenticated User:", request.user)  # ✅ Debugging output
+        if not request.user.is_authenticated:
+            return Response({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
         hackathon = get_object_or_404(HackathonsList, id=pk)
-
-        # Check if Hackathon is inactive
         if not hackathon.status:
-            return Response({'error': 'This hackathon is not active.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        user = request.user  # ✅ Get user from token
+            return Response({'error': 'You can only apply for active hackathons'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if the user has already applied
-        if HackathonApplication.objects.filter(hackathon=hackathon, user=user).exists():
-            return Response({'error': 'You have already applied to this hackathon!'}, status=status.HTTP_400_BAD_REQUEST)
+        if HackathonApplication.objects.filter(user=request.user, hackathon=hackathon).exists():
+            return Response({'error': 'You have already applied'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # ✅ Create application with user automatically
-        HackathonApplication.objects.create(hackathon=hackathon, user=user)
-
+        HackathonApplication.objects.create(user=request.user, hackathon=hackathon)
         return Response({'message': 'Successfully applied!'}, status=status.HTTP_201_CREATED)
 
-        # Pass hackathon in serializer context
-        serializer = HackathonApplicationSerializer(data=request.data, context={'hackathon': hackathon})
-        if serializer.is_valid():
-            serializer.save()  # 'hackathon' is automatically set
-            return Response({'message': 'Successfully applied!'}, status=status.HTTP_201_CREATED)
-
-        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class HackathonApplicationsListView(generics.ListAPIView):
     queryset = HackathonApplication.objects.all()
@@ -96,11 +110,4 @@ class HackathonApplicationsListView(generics.ListAPIView):
         if hackathon_id:
             return HackathonApplication.objects.filter(hackathon_id=hackathon_id)
         return super().get_queryset()
-
-
-        
-
-def hackathons(request):
-    hackathons_list = HackathonsList.objects.all()
-    return render(request, 'hackathons/hackathons.html', {'hackathons_list': hackathons_list})
 
