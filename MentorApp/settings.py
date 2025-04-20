@@ -49,12 +49,14 @@ INSTALLED_APPS = [
     'knox',
     'rest_framework',
     'hackathons',
+    'corsheaders',
 ]
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -156,6 +158,12 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://your-frontend-domain.com",  # optional, for production
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"  # Or "db" if needed
 # SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access to session cookies
