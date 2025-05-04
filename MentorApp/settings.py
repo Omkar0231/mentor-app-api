@@ -167,6 +167,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "https://your-frontend-domain.com",  # optional, for production
     "https://my-project10-tau.vercel.app",
+    "https://hackathon-2-0-gold.vercel.app/",  # your frontend URL
 ]
 
 CORS_ALLOW_CREDENTIALS = True
